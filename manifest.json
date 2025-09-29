@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "Wrike Copy",
+  "version": "1.0",
+  "description": "Copy Wrike ticket URLs as HTML links for Slack",
+  "permissions": [
+    "clipboardWrite"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://www.wrike.com/*", "https://wrike.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_end"
+    }
+  ]
+}
