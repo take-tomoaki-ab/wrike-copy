@@ -1,6 +1,5 @@
 // CSS selector for Wrike ticket title (to be customized)
-const WRIKE_TITLE_SELECTOR = '.title__field'; // Replace with actual selector
-console.log('loaded')
+const WRIKE_TITLE_SELECTOR = '.title__field';
 
 // Monitor copy events
 document.addEventListener('copy', async (event) => {
