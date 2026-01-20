@@ -10,11 +10,24 @@ Wrikeのチケット URLをコピーする際に、自動的にSlack用のHTML�
 
 ## インストール方法
 
+この拡張機能はTypeScriptで開発されているため、ビルドが必要です。
+
 1. このリポジトリをクローンまたはダウンロード
-2. Chromeで `chrome://extensions/` を開く
-3. 右上の「デベロッパーモード」を有効にする
-4. 「パッケージ化されていない拡張機能を読み込む」をクリック
-5. `wrike-copy` フォルダを選択
+   ```bash
+   git clone <repository-url>
+   cd wrike-copy
+   ```
+
+2. 依存関係のインストールとビルド
+   ```bash
+   npm install
+   npm run build
+   ```
+
+3. Chromeで `chrome://extensions/` を開く
+4. 右上の「デベロッパーモード」を有効にする
+5. 「パッケージ化されていない拡張機能を読み込む」をクリック
+6. `wrike-copy/dist` フォルダを選択
 
 ## 使い方
 
@@ -48,16 +61,23 @@ WrikeのURLが検出されると：
 
 ```
 wrike-copy/
-├── manifest.json    # 拡張機能の設定ファイル
-├── content.js       # メインのスクリプト
-└── README.md        # このファイル
+├── src/
+│   └── content.ts       # メインのスクリプト（TypeScript）
+├── dist/                # ビルド後のファイル（Chromeに読み込むディレクトリ）
+│   ├── content.js       # コンパイル済みJavaScript
+│   └── manifest.json    # 拡張機能の設定ファイル（コピー）
+├── manifest.json        # 拡張機能の設定ファイル（ソース）
+├── package.json         # npm設定ファイル
+├── tsconfig.json        # TypeScript設定ファイル
+└── README.md            # このファイル
 ```
 
 ## トラブルシューティング
 
 ### チケットタイトルが取得できない場合
 - Wrikeのページ構造が変更された可能性があります
-- `content.js` の `WRIKE_TITLE_SELECTOR` を適切なセレクタに更新してください
+- `src/content.ts` の `WRIKE_TITLE_SELECTOR` を適切なセレクタに更新してください
+- 変更後は `npm run build` でビルドし直してください
 
 ### クリップボードへの書き込みが失敗する場合
 - ブラウザのセキュリティ設定を確認してください
@@ -65,12 +85,30 @@ wrike-copy/
 
 ## 開発者向け情報
 
+### 開発コマンド
+
+```bash
+# 依存関係のインストール
+npm install
+
+# ビルド（distフォルダに出力）
+npm run build
+
+# ウォッチモード（ファイル変更を監視して自動ビルド）
+npm run watch
+
+# ビルドファイルのクリーンアップ
+npm run clean
+```
+
 ### カスタマイズ方法
 
-タイトルセレクタの変更：
-```javascript
+タイトルセレクタの変更（`src/content.ts`）：
+```typescript
 const WRIKE_TITLE_SELECTOR = '.your-custom-selector';
 ```
+
+変更後は `npm run build` でビルドしてください。
 
 ### デバッグ
 
@@ -84,7 +122,14 @@ Chromeのデベロッパーツール（F12）のコンソールタブで、以�
 
 ## 更新履歴
 
-- v1.0 - 初回リリース
-  - Wrike URLの自動検出
-  - HTMLリンク形式への変換
-  - Slack対応
+### v1.0.0 (2026-01-20)
+- TypeScriptへの再実装
+  - より型安全なコードベース
+  - ビルドプロセスの導入（npm scripts）
+- 共通機能の最適化
+- 開発環境の改善
+
+### v0.1.0 (初回リリース)
+- Wrike URLの自動検出
+- HTMLリンク形式への変換
+- Slack対応
