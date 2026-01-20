@@ -6,12 +6,14 @@ document.addEventListener('copy', async (event) => {
   try {
     // Get the text that's being copied
     const selection = window.getSelection();
+    if (!selection) return;
+
     const copiedText = selection.toString().trim();
 
     // Check if it's a Wrike URL
     if (copiedText.startsWith('https://www.wrike.com/')) {
       // Get the ticket title from the page
-      const titleElement = document.querySelector(WRIKE_TITLE_SELECTOR);
+      const titleElement = document.querySelector<HTMLTextAreaElement>(WRIKE_TITLE_SELECTOR);
       const ticketTitle = titleElement ? titleElement.value : copiedText;
 
       // Create HTML format for Slack
@@ -37,11 +39,11 @@ document.addEventListener('copy', async (event) => {
 
 // Alternative approach: Monitor clipboard API usage
 const originalWriteText = navigator.clipboard.writeText;
-navigator.clipboard.writeText = async function(text) {
+navigator.clipboard.writeText = async function (text) {
   if (text && text.startsWith('https://www.wrike.com/')) {
     // Get the ticket title from the page
-    const titleElement = document.querySelector(WRIKE_TITLE_SELECTOR);
-    const ticketTitle = titleElement ? titleElement.textContent.trim() : 'Wrike Ticket';
+    const titleElement = document.querySelector<HTMLTextAreaElement>(WRIKE_TITLE_SELECTOR);
+    const ticketTitle = titleElement ? titleElement.value : 'Wrike Ticket';
 
     // Create HTML format for Slack
     const htmlContent = `<a href="${text}">${ticketTitle}</a>`;
