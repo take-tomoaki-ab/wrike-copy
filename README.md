@@ -32,7 +32,7 @@ Wrikeのチケット URLをコピーする際に、自動的にSlack用のHTML�
 ## 使い方
 
 1. Wrikeでチケットを開く
-2. URLバーからURLをコピー（Cmd+C / Ctrl+C）
+2. URLバー/サイドバーからURLをコピー
 3. Slackに貼り付ける（Cmd+V / Ctrl+V）
 4. URLではなくチケットタイトルがリンクとして表示される
 
