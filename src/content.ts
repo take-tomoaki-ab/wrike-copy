@@ -1,128 +1,82 @@
-// CSS selector for Wrike ticket title (to be customized)
 const WRIKE_TITLE_SELECTOR = '[aria-label="作業項目タイトル"]'
-const WRIKE_MENU_DIALOG = 'WRIKE-MENU-V2'
 
-let menuKind: 'sidebar' | null = null
-let selectedMenu: string | null = null
-let contextMenuTitle: string | null = null
+// コピー操作のトリガー（右クリック・三点リーダー・サイドバーメニュー）からキャプチャしたタイトル。
+// 使用後にクリアされる。
+let lastCapturedTitle: string | null = null
 
-// Watch menu dialog
-const menuObserver = new MutationObserver(mutations => {
-  for (const mutation of mutations) {
-    if (mutation.type !== 'childList') return
-
-    Array.from(mutation.addedNodes).forEach(node => {
-      if ((node as Element).tagName === WRIKE_MENU_DIALOG) {
-        menuKind = 'sidebar'
-        const selectedRow = document.querySelector('.folder-tree-item--context-menu-open .tree-item-name__button-text')
-        if (selectedRow) selectedMenu = selectedRow.textContent
-      }
-    })
-
-    // Remove menu kind after copy
-    Array.from(mutation.removedNodes).forEach(node => {
-      if ((node as Element).tagName === WRIKE_MENU_DIALOG) {
-        setTimeout(() => {
-          menuKind = null
-        }, 1000);
-      }
-    })
-  }
-})
-menuObserver.observe(document.body, {
-  childList: true,
-  subtree: false
-})
-
-// テーブルビューの行からタイトルを取得して保存
-function captureRowTitle(target: Element): void {
-  // 右クリック: rowheader上ならそこから取得
+// テーブルビューの行 / サイドバーのフォルダアイテムからタイトルをキャプチャ
+function captureTitle(target: Element): void {
+  // テーブルビュー: rowheader を右クリック
   const rowheader = target.closest('[role="rowheader"]')
   if (rowheader) {
-    contextMenuTitle = rowheader.textContent?.trim() ?? null
+    lastCapturedTitle = rowheader.textContent?.trim() ?? null
     return
   }
-  // 三点リーダーなど行内ボタン: 同じrow内のrowheaderから取得
+  // テーブルビュー: 行内の三点リーダーボタン
   const row = target.closest('[role="row"]')
   if (row) {
     const rh = row.querySelector('[role="rowheader"]')
-    contextMenuTitle = rh ? rh.textContent?.trim() ?? null : null
+    lastCapturedTitle = rh?.textContent?.trim() ?? null
+    return
+  }
+  // サイドバー: フォルダツリーアイテム
+  const treeNode = target.closest('folder-tree-node')
+  if (treeNode) {
+    const nameEl = treeNode.querySelector('.tree-item-name__button')
+    lastCapturedTitle = nameEl?.textContent?.trim() ?? null
   }
 }
 
-document.addEventListener('contextmenu', (e) => {
-  captureRowTitle(e.target as Element)
-}, true)
-
-document.addEventListener('click', (e) => {
+document.addEventListener('contextmenu', e => captureTitle(e.target as Element), true)
+document.addEventListener('click', e => {
   const btn = (e.target as Element).closest('button')
-  if (btn) captureRowTitle(btn)
+  if (btn) captureTitle(btn)
 }, true)
 
-/**
- * Get the ticket title from the page
- * @returns The ticket title or null if not found
- */
 function getTicketTitle(): string | null {
-  if (menuKind === 'sidebar') { // menu on sidebar
-    return selectedMenu
-  }
-
-  const titleElement = document.querySelector<HTMLTextAreaElement>(WRIKE_TITLE_SELECTOR);
-  if (titleElement) return titleElement.value;
-
-  return contextMenuTitle;
+  if (lastCapturedTitle) return lastCapturedTitle
+  return document.querySelector<HTMLTextAreaElement>(WRIKE_TITLE_SELECTOR)?.value ?? null
 }
 
-/**
- * Write Wrike URL with HTML formatting to clipboard
- * @param url - The Wrike URL
- * @param fallbackTitle - Fallback title if no title found on page
- */
 async function writeWrikeUrlToClipboard(url: string, fallbackTitle: string): Promise<void> {
-  const ticketTitle = getTicketTitle() ?? fallbackTitle;
-  const htmlContent = `<a href="${url}">${ticketTitle}</a>`;
+  const ticketTitle = getTicketTitle() ?? fallbackTitle
+  lastCapturedTitle = null // 使用後にクリア
 
+  const htmlContent = `<a href="${url}">${ticketTitle}</a>`
   await navigator.clipboard.write([
     new ClipboardItem({
       'text/plain': new Blob([url], { type: 'text/plain' }),
       'text/html': new Blob([htmlContent], { type: 'text/html' })
     })
-  ]);
-
-  console.log('Wrike URL copied with HTML formatting:', { url, title: ticketTitle });
+  ])
+  console.log('Wrike URL copied with HTML formatting:', { url, title: ticketTitle })
 }
 
-// Monitor copy events
-document.addEventListener('copy', async (event) => {
+// copy イベント（execCommand fallback 用）
+document.addEventListener('copy', async event => {
   try {
-    const selection = window.getSelection();
-    if (!selection) return;
-
-    const copiedText = selection.toString().trim();
-
-    // Check if it's a Wrike URL
+    const selection = window.getSelection()
+    if (!selection) return
+    const copiedText = selection.toString().trim()
     if (copiedText.startsWith('https://www.wrike.com/')) {
-      event.preventDefault();
-      await writeWrikeUrlToClipboard(copiedText, copiedText);
+      event.preventDefault()
+      await writeWrikeUrlToClipboard(copiedText, copiedText)
     }
   } catch (error) {
-    console.error('Error processing copy event:', error);
+    console.error('Error processing copy event:', error)
   }
-});
+})
 
-// Alternative approach: Monitor clipboard API usage
-const originalWriteText = navigator.clipboard.writeText;
-navigator.clipboard.writeText = async function (text) {
-  if (text && text.startsWith('https://www.wrike.com/')) {
+// navigator.clipboard.writeText を上書き（manifest の world: "MAIN" で動作）
+const originalWriteText = navigator.clipboard.writeText
+navigator.clipboard.writeText = async function(text) {
+  if (text?.startsWith('https://www.wrike.com/')) {
     try {
-      await writeWrikeUrlToClipboard(text, 'Wrike Ticket');
-      return;
+      await writeWrikeUrlToClipboard(text, 'Wrike Ticket')
+      return
     } catch (error) {
-      console.error('Error writing HTML clipboard:', error);
+      console.error('Error writing HTML clipboard:', error)
     }
   }
-
-  // Fall back to original behavior
-  return originalWriteText.call(this, text);
-};
+  return originalWriteText.call(this, text)
+}
