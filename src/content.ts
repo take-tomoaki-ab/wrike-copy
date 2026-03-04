@@ -1,5 +1,5 @@
 // CSS selector for Wrike ticket title (to be customized)
-const WRIKE_TITLE_SELECTOR = '.title__field'
+const WRIKE_TITLE_SELECTOR = '[aria-label="作業項目タイトル"]'
 const WRIKE_MENU_DIALOG = 'WRIKE-MENU-V2'
 
 let menuKind: 'sidebar' | null = null

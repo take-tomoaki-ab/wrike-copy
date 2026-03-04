@@ -10,7 +10,8 @@
     {
       "matches": ["https://www.wrike.com/*", "https://wrike.com/*"],
       "js": ["content.js"],
-      "run_at": "document_end"
+      "run_at": "document_end",
+      "world": "MAIN"
     }
   ]
 }
