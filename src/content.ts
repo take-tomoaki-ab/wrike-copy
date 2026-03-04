@@ -4,6 +4,7 @@ const WRIKE_MENU_DIALOG = 'WRIKE-MENU-V2'
 
 let menuKind: 'sidebar' | null = null
 let selectedMenu: string | null = null
+let contextMenuTitle: string | null = null
 
 // Watch menu dialog
 const menuObserver = new MutationObserver(mutations => {
@@ -33,6 +34,31 @@ menuObserver.observe(document.body, {
   subtree: false
 })
 
+// テーブルビューの行からタイトルを取得して保存
+function captureRowTitle(target: Element): void {
+  // 右クリック: rowheader上ならそこから取得
+  const rowheader = target.closest('[role="rowheader"]')
+  if (rowheader) {
+    contextMenuTitle = rowheader.textContent?.trim() ?? null
+    return
+  }
+  // 三点リーダーなど行内ボタン: 同じrow内のrowheaderから取得
+  const row = target.closest('[role="row"]')
+  if (row) {
+    const rh = row.querySelector('[role="rowheader"]')
+    contextMenuTitle = rh ? rh.textContent?.trim() ?? null : null
+  }
+}
+
+document.addEventListener('contextmenu', (e) => {
+  captureRowTitle(e.target as Element)
+}, true)
+
+document.addEventListener('click', (e) => {
+  const btn = (e.target as Element).closest('button')
+  if (btn) captureRowTitle(btn)
+}, true)
+
 /**
  * Get the ticket title from the page
  * @returns The ticket title or null if not found
@@ -43,7 +69,9 @@ function getTicketTitle(): string | null {
   }
 
   const titleElement = document.querySelector<HTMLTextAreaElement>(WRIKE_TITLE_SELECTOR);
-  return titleElement ? titleElement.value : null;
+  if (titleElement) return titleElement.value;
+
+  return contextMenuTitle;
 }
 
 /**
